@@ -1,0 +1,67 @@
+package JSONCompiler;
+
+import java_cup.runtime.*;
+
+/* CUP specification for JSON (w/ actions)
+ * Filippos A. Zofakis
+ * 17025184
+ */
+parser code {:
+	public static void main(String args[]) throws Exception {
+		SymbolFactory sf = new DefaultSymbolFactory();
+		if (args.length==0) new Parser(new Scanner(System.in,sf),sf).parse();
+		else new Parser(new Scanner(new java.io.FileInputStream(args[0]),sf),sf).parse();
+	}
+:}
+
+/* Terminals (tokens returned by the scanner). */
+terminal COMMA, COLON, LSQBRACKET, RSQBRACKET, LCUBRACKET, RCUBRACKET, NULL;
+terminal String STR, NUM, BOOL;
+
+// JSON is agnostic about numbers  and Boolean values http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf
+// A JSON text is a sequence of tokens formed from Unicode code points that conforms to the JSON value grammar.
+// That is why I declare them as String.
+
+// The following are not necessary
+// EXP, E, FRAC, INT, DIG, DIG19, CHAR
+
+/* Non-terminals */
+non terminal object, member_list, pair, array, element_list, value;
+
+/* The grammar */
+// Following the standard from IETF (https://www.ietf.org/rfc/rfc7159.txt),
+// declaring that JSON text is a serialized value and it is not
+// constrained to be object or an array.
+
+
+
+object       ::= LCUBRACKET member_list RCUBRACKET | LCUBRACKET RCUBRACKET;
+member_list  ::= member_list COMMA pair | pair;
+pair         ::= STR:s COLON value
+                 {: System.out.println("Name string of pair: " + s); :};
+
+array        ::= LSQBRACKET element_list RSQBRACKET | LSQBRACKET RSQBRACKET;
+element_list ::= element_list COMMA value | value;
+
+value        ::= STR:s
+                 {: System.out.println("String value: " + s);
+                     RESULT = s; :}
+                 |
+                 NUM:n
+                 {: System.out.println("Number value: " + n);
+                     RESULT = n; :}
+                 |
+                 BOOL:b
+                 {: System.out.println("Boolean value: " + b);
+                     RESULT = b; :}
+                 |
+                 NULL:nu
+                 {: System.out.println("Null value");
+                     RESULT = nu; :}
+                 |
+                 object:o
+                 {: RESULT = o; :}
+                 |
+                 array:a
+                 {: RESULT = a; :}
+                 ;
